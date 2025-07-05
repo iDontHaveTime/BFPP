@@ -666,17 +666,17 @@ inline std::ofstream& GeneratePrologue(ParsedContext& ctx, std::ofstream& file){
     // push rbp
     file<<'\t'<<GeneratePushRegister(ctx.regs.frameReg, Widths::Qword)<<std::endl;
 
-    // mov rbp to rsp
-    file<<'\t'<<GenerateInstruction(AssemblyInstruction::MOV, Widths::Qword)<<' ';
-    file<<GenerateRegisterOP(ctx.regs.stackReg)<<", "<<GenerateRegisterOP(ctx.regs.frameReg)<<std::endl;
-
     // sub allocation from rsp
     file<<'\t'<<GenerateInstruction(AssemblyInstruction::SUB, Widths::Qword)<<' ';
     file<<GenerateDirectOP(ALLOCATE)<<", "<<GenerateRegisterOP(ctx.regs.stackReg)<<std::endl;
 
+    // mov rbp to rsp
+    file<<'\t'<<GenerateInstruction(AssemblyInstruction::MOV, Widths::Qword)<<' ';
+    file<<GenerateRegisterOP(ctx.regs.stackReg)<<", "<<GenerateRegisterOP(ctx.regs.frameReg)<<std::endl;
+    
     // sub offset from rbp
     if(BASE_OFFSET > 0){
-        file<<'\t'<<GenerateInstruction(AssemblyInstruction::SUB, Widths::Qword)<<' ';
+        file<<'\t'<<GenerateInstruction(AssemblyInstruction::ADD, Widths::Qword)<<' ';
         file<<GenerateDirectOP(BASE_OFFSET)<<", "<<GenerateRegisterOP(ctx.regs.frameReg)<<std::endl;
     }
     return file;
@@ -845,12 +845,12 @@ void BFPPCodegen(ParsedContext& ctx, const char* file_out){
                     file<<std::endl;
                 }
                 else if(ins.type == BFInstructionType::LEFT){
-                    file<<'\t'<<GenerateInstruction(AssemblyInstruction::ADD, Widths::Qword)<<' ';
+                    file<<'\t'<<GenerateInstruction(AssemblyInstruction::SUB, Widths::Qword)<<' ';
                     file<<GenerateDirectOP(ins.count * GetMultiplier(currentWidth))<<", "<<GenerateRegisterOP(ctx.regs.frameReg);
                     file<<std::endl;
                 }
                 else if(ins.type == BFInstructionType::RIGHT){
-                    file<<'\t'<<GenerateInstruction(AssemblyInstruction::SUB, Widths::Qword)<<' ';
+                    file<<'\t'<<GenerateInstruction(AssemblyInstruction::ADD, Widths::Qword)<<' ';
                     file<<GenerateDirectOP(ins.count * GetMultiplier(currentWidth))<<", "<<GenerateRegisterOP(ctx.regs.frameReg);
                     file<<std::endl;
                 }
@@ -1099,6 +1099,8 @@ enum class CLIState{
     Normal,
     Output,
     Assembler,
+    Offset,
+    Allocate,
 };
 
 int main(int argc, char** argv){
@@ -1122,6 +1124,12 @@ int main(int argc, char** argv){
                 else if(flag == "-a" || flag == "--assembler"){
                     state = CLIState::Assembler;
                 }
+                else if(flag == "--offset"){
+                    state = CLIState::Offset;
+                }
+                else if(flag == "--stack"){
+                    state = CLIState::Allocate;
+                }
             }
             else{
                 input = argv[i];
@@ -1133,6 +1141,14 @@ int main(int argc, char** argv){
         }
         else if(state == CLIState::Output){
             output = argv[i];
+            state = CLIState::Normal;
+        }
+        else if(state == CLIState::Allocate){
+            ALLOCATE = std::stoul(argv[i]);
+            state = CLIState::Normal;
+        }
+        else if(state == CLIState::Offset){
+            BASE_OFFSET = std::stoul(argv[i]);
             state = CLIState::Normal;
         }
     }

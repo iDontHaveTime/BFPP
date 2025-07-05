@@ -50,13 +50,6 @@
     * ; star means it puts it into argument, the amount of stars the argument it is
     ?call putchar
     ?i8
-    >>>>>>
-    ?mov 72<?mov 101<?mov 108<?mov 108<?mov 111<?mov 0 ; hello\0
-    >>>>>
-    ?i64
-    *^ ; ^ means current address, so basically pass in current address not value
-    ?i64>>
-    ?call puts
 
 
     !
@@ -76,7 +69,7 @@
     ; basically &^  means that argument into address pointer
     ; and *^ means put address pointer into argument
 
-    ; when . (syscall) is used, most register will not contain stored values anymore
+    ; when . (syscall) is used, most registers will not contain stored values anymore, checkpoints for example
 
 
     ; explicit return is optional
